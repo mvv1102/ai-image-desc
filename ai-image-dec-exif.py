@@ -3,12 +3,11 @@ import json
 import os
 import glob
 import sys
-from datetime import datetime
 from exif import Image as ExifImage
-from exif import DATETIME_STR_FORMAT
 import ollama
-from ollama import chat
-from ollama import ChatResponse
+import asyncio
+from ollama import AsyncClient
+from ollama import GenerateResponse
 
 
 EXIF_TAGS = [
@@ -31,11 +30,20 @@ EXIF_TAGS = [
     "user_comment",
 ]
 
-def ask_llm(folder, update_exif=False, output_path=None):
+async def generate_ollama_response(img_base64, model) -> GenerateResponse:
+    response = await AsyncClient().generate(
+        model=model,
+        format="json",
+        prompt="Describe the photo as a subject and a collection of keywords. Return the response in JSON format. Use the following schema: { subject: string, keywords: string[] }",
+        images=[img_base64],
+    )
+    return response
+
+def ask_llm(folder, update_exif=False, output_path=None, model="llava:13b"):
     if os.path.isfile(folder):
         file = os.path.basename(folder)
         file_path = folder
-        ask_llm_file(file_path, update_exif, output_path)
+        asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
     else:
         images = glob.glob(os.path.join(folder, "*.[jJ][pP][gG]")) + \
             glob.glob(os.path.join(folder, "*.[pP][nN][gG]")) + \
@@ -44,10 +52,10 @@ def ask_llm(folder, update_exif=False, output_path=None):
         for file in images:
             file_path = os.path.join(folder, file)
             if os.path.isfile(file_path):
-                ask_llm_file(file_path, update_exif, output_path)
+                asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
 
-def ask_llm_file(path, update_exif=False, output_path=None):
-    print(f"Processing file: {path}")
+async def ask_llm_file(path, update_exif=False, output_path=None, model="llava:13b"):
+    print(f"Processing file {path} using {model}")
 
     with open(path, 'rb') as img_file:
         img_data = img_file.read()
@@ -55,13 +63,11 @@ def ask_llm_file(path, update_exif=False, output_path=None):
         # Convert image to base64 for Ollama
         img_base64 = base64.b64encode(img_data).decode('utf-8')
         
-        # Use the correct approach as per Gemma 3 documentation - images at top level
-        response = ollama.generate(
-            model='llava:latest',
-            format="json",
-            prompt="Describe the image as a subject and a collection of keywords. Return the response in JSON format. Use the following schema: { subject: string, keywords: string[] }",
-            images=[img_base64]  # Pass base64 encoded image data at top level
-        )
+        try:
+            response = await asyncio.wait_for(generate_ollama_response(img_base64, model), timeout=180)
+        except asyncio.TimeoutError:
+            print(f"Timeout while generating response for {path}")
+            return
         
         if update_exif:
             update_file(path, response['response'], output_path)
@@ -98,6 +104,7 @@ def update_file(file_path, description_json, output_path):
 if __name__ == "__main__":
     output_path = None
     update_exif = False
+    model = "gemma3:latest"
 
     if len(sys.argv) > 2:
         operation = sys.argv[1]
@@ -105,22 +112,27 @@ if __name__ == "__main__":
         if not os.path.isabs(path):
             path = os.path.abspath(path)
 
+        for i in range(3, len(sys.argv)):
+            if sys.argv[i].startswith("-output:"):
+                output_path = sys.argv[i+1]
+            if sys.argv[i].startswith("-model:"):
+                model = sys.argv[i+1]
+
         if operation == "update":
             update_exif = True
-            for i in range(3, len(sys.argv)):
-                if sys.argv[i].startswith("-output:"):
-                    output_path = sys.argv[i+1]
+
     else:
         print(
-            "Usage: python ai-image-dec-exif.py <operation> <path> -output: [output_path]")
+            "Usage: python ai-image-dec-exif.py <operation> <path> -output: [output_path] -model: [model]")
         print("operation: 'ask' or 'update'")
         print("path: path to the image file or folder")
         print("output_path: path to write updated files to; if not provided, files would be renamed with '_edited' (optional parameter)")
+        print("model: model to use for the LLM, default is 'gemma3:latest' (optional parameter)")
         sys.exit(1)
 
     if operation == "ask":
-        ask_llm(path)
+        ask_llm(path, model=model)
     elif operation == "update":
-        ask_llm(path, update_exif, output_path)
+        ask_llm(path, update_exif, output_path, model=model)
     else:
         print("One or both of the provided paths are not valid directories.")
