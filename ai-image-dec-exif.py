@@ -1,34 +1,13 @@
 import base64
 import json
-import os
 import glob
+import os
 import sys
+import time
 from exif import Image as ExifImage
-import ollama
 import asyncio
 from ollama import AsyncClient
 from ollama import GenerateResponse
-
-
-EXIF_TAGS = [
-    "author",
-    "artist",
-    "copyright",
-    "make",
-    "model",
-    "datetime",
-    "datetime_original",
-    "datetime_digitized",
-    "image_description",
-    "gps_version_id",
-    "gps_latitude_ref",
-    "gps_latitude",
-    "gps_longitude_ref",
-    "gps_longitude",
-    "gps_altitude_ref",
-    "gps_altitude",
-    "user_comment",
-]
 
 async def generate_ollama_response(img_base64, model) -> GenerateResponse:
     response = await AsyncClient().generate(
@@ -36,14 +15,21 @@ async def generate_ollama_response(img_base64, model) -> GenerateResponse:
         format="json",
         prompt="Describe the photo as a subject and a collection of keywords. Return the response in JSON format. Use the following schema: { subject: string, keywords: string[] }",
         images=[img_base64],
+        options={"temperature": 0.3}  # Lower temperature for more consistent output
     )
     return response
 
-def ask_llm(folder, update_exif=False, output_path=None, model="llava:13b"):
+def ask_llm(folder, update_exif=False, output_path=None, model="gemma3:latest"):
+    start_time = time.time()
+    count = 0
+    failed = list()
     if os.path.isfile(folder):
         file = os.path.basename(folder)
         file_path = folder
-        asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
+        success = asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
+        if not success:
+            failed.append(file_path)
+        count += 1
     else:
         images = glob.glob(os.path.join(folder, "*.[jJ][pP][gG]")) + \
             glob.glob(os.path.join(folder, "*.[pP][nN][gG]")) + \
@@ -52,9 +38,17 @@ def ask_llm(folder, update_exif=False, output_path=None, model="llava:13b"):
         for file in images:
             file_path = os.path.join(folder, file)
             if os.path.isfile(file_path):
-                asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
+                success = asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
+                if not success:
+                    failed.append(file_path)
+                count += 1
+    end_time = time.time()
+    print(f"Total images processed: {count}")
+    if len(failed) > 0:
+        print(f"Failed to process {len(failed)} images: {failed}")    
+    print(f"Total run time: {end_time - start_time:.2f} seconds")
 
-async def ask_llm_file(path, update_exif=False, output_path=None, model="llava:13b"):
+async def ask_llm_file(path, update_exif=False, output_path=None, model="gemma3:latest"):
     print(f"Processing file {path} using {model}")
 
     with open(path, 'rb') as img_file:
@@ -67,13 +61,13 @@ async def ask_llm_file(path, update_exif=False, output_path=None, model="llava:1
             response = await asyncio.wait_for(generate_ollama_response(img_base64, model), timeout=180)
         except asyncio.TimeoutError:
             print(f"Timeout while generating response for {path}")
-            return
+            return False
         
         if update_exif:
-            update_file(path, response['response'], output_path)
+            return update_file(path, response['response'], output_path) # return True if successful, False otherwise
         else:
             print(response['response'])
-
+    return True
 
 def update_file(file_path, description_json, output_path):
     print(f"Updating file: {file_path}")
@@ -82,7 +76,7 @@ def update_file(file_path, description_json, output_path):
             img = ExifImage(img_file)
             if description_json is not None:
                 data = json.loads(description_json)
-                description = f"{data['subject']} ({', '.join(data['keywords'])})"
+                description = f"{data['subject']} ({', '.join(data['keywords'])})".encode('ascii', 'backslashreplace').decode('ascii')
                 print(f"Setting description: {description}")
                 img.image_description = description
 
@@ -99,6 +93,8 @@ def update_file(file_path, description_json, output_path):
                 ofile.write(img.get_file())
     except Exception as e:
         print(f"Error processing file {file_path}: {e}")
+        return False
+    return True
 
 
 if __name__ == "__main__":
