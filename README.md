@@ -19,5 +19,7 @@ There are two main benefits of this tool:
 
 **model**: LLM to use for the description, default is `gemma3:latest` (optional parameter)
 
----
+## Notes
 While the script does not overwrite the original files, it's good idea to have a backup first. I'm not responsible for any data loss.
+
+This tool is inspired by [Matt Williams' AI Renamer project](https://github.com/technovangelist/airenamer)
