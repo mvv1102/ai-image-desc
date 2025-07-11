@@ -9,7 +9,7 @@ There are two main benefits of this tool:
 
 ## Usage
 
->python ai-image-dec-exif.py \<operation\> \<path\> -output: [output_path] -model: [model]
+>python ai-image-desc-exif.py \<operation\> \<path\> -output: [output_path] -model: [model]
 
 **operation**: `ask` or `update`
 
