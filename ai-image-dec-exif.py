@@ -123,7 +123,7 @@ if __name__ == "__main__":
         print("operation: 'ask' or 'update'")
         print("path: path to the image file or folder")
         print("output_path: path to write updated files to; if not provided, files would be renamed with '_edited' (optional parameter)")
-        print("model: model to use for the LLM, default is 'gemma3:latest' (optional parameter)")
+        print("model: LLM to use for the description, default is 'gemma3:latest' (optional parameter)")
         sys.exit(1)
 
     if operation == "ask":
