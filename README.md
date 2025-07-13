@@ -4,7 +4,7 @@ A simple python script that embeds description of images into exif metadata base
 
 ## Benefits
 There are two main benefits of this tool:
-1. It runs completely locally on you computer, so no need for sending your photos to the cloud for porcessing, no need to pay LLM useage fees, no need to high bandwidth internet connection.
+1. It runs completely locally on you computer, so no need for sending your photos to the cloud for processing, no need to pay LLM usage fees, no need to high bandwidth internet connection.
 2. You can use Windows Explorer to search you photos based on those tags! Just type *Subject: \<your search keyword\>* in the Explorer's search box and it will filter the photos down to only ones that match the keyword. How cool is that!
 
 ## Usage
@@ -27,4 +27,8 @@ Pull the repo to your local drive and install script dependencies from the `requ
 ## Notes
 While the script does not overwrite the original files, it's good idea to have a backup first. I'm not responsible for any data loss.
 
+I mostly tested with **llava:latest** (7 billion parameters) and **gemma3:latest** (4 billion parameters) models. In my opinion llava gives more generic descriptions, but it runs about 40% faster on my machine - 7.5 seconds per photo with gemma vs 4.4 seconds per photo with llava. My specs are Intel i7-4770 CPU, 32 Gb of RAM, NVIDIA GeForce GTX 1070 GPU with 8 Gb of VRAM.
+
 This tool is inspired by [AI Renamer project](https://github.com/technovangelist/airenamer)
+
+## Searching based on descriptions

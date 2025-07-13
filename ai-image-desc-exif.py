@@ -70,7 +70,17 @@ async def ask_llm_file(path, update_exif=False, output_path=None, model="gemma3:
     return True
 
 def update_file(file_path, description_json, output_path):
-    print(f"Updating file: {file_path}")
+    if output_path is None:
+        filename, extension = os.path.splitext(file_path)
+        output_path = filename + "_edited" + extension
+    else:
+        if not os.path.isabs(output_path):
+            output_path = os.path.join(os.path.dirname(file_path), output_path)
+            if not os.path.exists(output_path):
+                os.makedirs(output_path)
+        output_path = os.path.normpath(os.path.join(output_path, os.path.basename(file_path)))
+
+    print(f"Updating file: {output_path}")
     try:
         with open(file_path, "rb") as img_file:
             img = ExifImage(img_file)
@@ -80,16 +90,7 @@ def update_file(file_path, description_json, output_path):
                 print(f"Setting description: {description}")
                 img.image_description = description
 
-            if output_path is None:
-                filename, extension = os.path.splitext(file_path)
-                file_path = filename + "_edited" + extension
-            else:
-                if not os.path.isabs(output_path):
-                    output_path = os.path.join(os.path.dirname(file_path), output_path)
-                    if not os.path.exists(output_path):
-                        os.makedirs(output_path)
-                file_path = os.path.join(output_path, os.path.basename(file_path))
-            with open(file_path, "wb") as ofile:
+            with open(output_path, "wb") as ofile:
                 ofile.write(img.get_file())
     except Exception as e:
         print(f"Error processing file {file_path}: {e}")
