@@ -13,9 +13,10 @@ You must have [Ollama](https://ollama.ai) installed and you must pull the model(
 
 Pull the repo to your local drive and install script dependencies from the `requirements.txt` file (exif and ollama).
 
-### Command:
->python ai-image-desc-exif.py \<operation\> \<path\> -output: [output_path] -model: [model]
-
+## Command
+```
+python ai-image-desc-exif.py \<operation\> \<path\> -output: [output_path] -model: [model]
+```
 **operation**: `ask` or `update`
 
 **path**: path to the image file or folder
@@ -32,3 +33,13 @@ I mostly tested with **llava:latest** (7 billion parameters) and **gemma3:latest
 This tool is inspired by [AI Renamer project](https://github.com/technovangelist/airenamer)
 
 ## Searching based on descriptions
+In order to search for your photos based on the generated descriptions, you need to preface each keyword with *subject:*. FOr example, if you want to find all pictures of sunset among your vacation photos, type *subject: sunset* in the Windows File Explorer search box. If you want to narrow it down further, you can add another *subject: keyword* statement after a plus sign. For example search for *subject: sunset + subject: car* will return only photos that are showing cars at sunset. Added benefit - it can search in subfolders too!
+
+### Unfiltered view
+![Unfiltered vacation photos](./images/Screenshot_unfiltered.jpg)
+
+### subject: sunset
+![All photos of sunset](./images/Screenshot_sunset.jpg)
+
+### subject: sunset + subject: car
+![All photos of sunset](./images/Screenshot_sunset_car.jpg)
