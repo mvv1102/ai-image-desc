@@ -43,7 +43,7 @@ I mostly tested with **llava:latest** (7 billion parameters) and **gemma3:latest
 This tool is inspired by [AI Renamer project](https://github.com/technovangelist/airenamer)
 
 ## Searching based on descriptions
-In order to search for your photos based on the generated descriptions, you need to preface each keyword with *subject:*. FOr example, if you want to find all pictures of sunset among your vacation photos, type *subject: sunset* in the Windows File Explorer search box. If you want to narrow it down further, you can add another *subject: keyword* statement after a plus sign. For example search for *subject: sunset + subject: car* will return only photos that are showing cars at sunset. Added benefit - it can search in subfolders too!
+In order to search for your photos based on the generated descriptions, you need to preface each keyword with *subject:*. For example, if you want to find all pictures of sunset among your vacation photos, type *subject: sunset* in the Windows File Explorer search box. If you want to narrow it down further, you can add another *subject: keyword* statement after a plus sign. For example search for *subject: sunset + subject: car* will return only photos that are showing cars at sunset. Added benefit - it can search in subfolders too!
 
 ### Unfiltered view
 ![Unfiltered vacation photos](./images/Screenshot_unfiltered.jpg)
