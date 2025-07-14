@@ -11,12 +11,22 @@ There are two main benefits of this tool:
 
 You must have [Ollama](https://ollama.ai) installed and you must pull the model(s) you want to use. The script expect model already be pulled. Default model is `gemma3:latest`
 
-Pull the repo to your local drive and install script dependencies from the `requirements.txt` file (exif and ollama).
+## Running
+I packaged the script as a convenient Windows executable file. You can download it and run as follows:
+```
+ai-image-desc-exif.exe \<operation\> \<path\> -output: [output_path] -model: [model]
+```
 
-## Command
+If you want run Python script directly, pull the repo to your local drive, install script dependencies from the `requirements.txt` file (exif and ollama):
+```
+pip install -r requirements.txt
+```
+
+and then run the following:
 ```
 python ai-image-desc-exif.py \<operation\> \<path\> -output: [output_path] -model: [model]
 ```
+### Parameters
 **operation**: `ask` or `update`
 
 **path**: path to the image file or folder
