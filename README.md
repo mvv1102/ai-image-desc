@@ -11,7 +11,7 @@ There are two main benefits of this tool:
 
 You must have [Ollama](https://ollama.ai) installed and you must pull the model(s) you want to use. The script expects the model already available locally. The default model is `gemma3:latest`
 
-### Running
+#### Running
 I packaged the script as a convenient Windows executable file. You can download it and run as follows:
 ```
 ai-image-desc-exif.exe \<operation\> \<path\> -output: [output_path] -model: [model]
@@ -26,7 +26,7 @@ and then run the following:
 ```
 python ai-image-desc-exif.py \<operation\> \<path\> -output: [output_path] -model: [model]
 ```
-### Parameters
+#### Parameters
 **operation**: `ask` or `update`
 
 **path**: path to the image file or folder
@@ -45,11 +45,11 @@ This tool is inspired by [AI Renamer project](https://github.com/technovangelist
 ## Searching based on descriptions
 In order to search for your photos based on the generated descriptions, you need to preface each keyword with *subject:*. For example, if you want to find all pictures of sunset among your vacation photos, type *subject: sunset* in the Windows File Explorer search box. If you want to narrow it down further, you can add another *subject: keyword* statement after a plus sign. For example search for *subject: sunset + subject: car* will return only photos that are showing cars at sunset. Added benefit - it can search in subfolders too!
 
-### Unfiltered view
+#### Unfiltered view
 ![Unfiltered vacation photos](./images/Screenshot_unfiltered.jpg)
 
-### subject: sunset
+#### subject: sunset
 ![All photos of sunset](./images/Screenshot_sunset.jpg)
 
-### subject: sunset + subject: car
+#### subject: sunset + subject: car
 ![All photos of sunset](./images/Screenshot_sunset_car.jpg)
