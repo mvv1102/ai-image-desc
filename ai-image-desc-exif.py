@@ -45,7 +45,7 @@ def ask_llm(folder, update_exif=False, output_path=None, model="gemma3:latest"):
     end_time = time.time()
     print(f"Total images processed: {count}")
     if len(failed) > 0:
-        print(f"Failed to process {len(failed)} images: {failed}")    
+        print(f"Failed to process {len(failed)} images: {failed}")
     print(f"Total run time: {end_time - start_time:.2f} seconds")
 
 async def ask_llm_file(path, update_exif=False, output_path=None, model="gemma3:latest"):
@@ -53,16 +53,16 @@ async def ask_llm_file(path, update_exif=False, output_path=None, model="gemma3:
 
     with open(path, 'rb') as img_file:
         img_data = img_file.read()
-        
+
         # Convert image to base64 for Ollama
         img_base64 = base64.b64encode(img_data).decode('utf-8')
-        
+
         try:
             response = await asyncio.wait_for(generate_ollama_response(img_base64, model), timeout=180)
         except asyncio.TimeoutError:
             print(f"Timeout while generating response for {path}")
             return False
-        
+
         if update_exif:
             return update_file(path, response['response'], output_path) # return True if successful, False otherwise
         else:
