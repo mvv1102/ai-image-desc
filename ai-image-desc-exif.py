@@ -9,6 +9,9 @@ import asyncio
 from ollama import AsyncClient
 from ollama import GenerateResponse
 
+from argparse import ArgumentParser
+from pathlib import Path
+
 async def generate_ollama_response(img_base64, model) -> GenerateResponse:
     response = await AsyncClient().generate(
         model=model,
@@ -97,39 +100,32 @@ def update_file(file_path, description_json, output_path):
         return False
     return True
 
+def update_files(args):
+    ask_llm(args.path, True, args.output, model=args.model)
+
+def ask_files(args):
+    ask_llm(args.path,  model=args.model)
 
 if __name__ == "__main__":
-    output_path = None
-    update_exif = False
-    model = "gemma3:latest"
+    parser = ArgumentParser(prog=sys.argv[0], description="AI assisted image description tool")
+    # Adding global CLI arguments
+    parser.add_argument("--model", "-m", default="gemma3:latest", help="Model to use")
 
-    if len(sys.argv) > 2:
-        operation = sys.argv[1]
-        path = sys.argv[2]
-        if not os.path.isabs(path):
-            path = os.path.abspath(path)
+    # Subcommands
+    commands = parser.add_subparsers(help="Commands")
 
-        for i in range(3, len(sys.argv)):
-            if sys.argv[i].startswith("-output:"):
-                output_path = sys.argv[i+1]
-            if sys.argv[i].startswith("-model:"):
-                model = sys.argv[i+1]
+    update = commands.add_parser("update", help="Updates image files")
+    update.add_argument("path",  help="Where to start the search")
+    update.add_argument("--output", "-o", help="Output path")
+    update.set_defaults(func=update_files)
 
-        if operation == "update":
-            update_exif = True
+    ask = commands.add_parser("ask", help="Dry mode. Finds and labels the images but won't update exif metadata")
+    ask.add_argument("path",  help="Where to start the search")
+    ask.set_defaults(func=ask_files)
 
+    args = parser.parse_args()
+    if "func" in args:
+        args.func(args)
     else:
-        print(
-            "Usage: python ai-image-dec-exif.py <operation> <path> -output: [output_path] -model: [model]")
-        print("operation: 'ask' or 'update'")
-        print("path: path to the image file or folder")
-        print("output_path: path to write updated files to; if not provided, files would be renamed with '_edited' (optional parameter)")
-        print("model: LLM to use for the description, default is 'gemma3:latest' (optional parameter)")
+        parser.print_help()
         sys.exit(1)
-
-    if operation == "ask":
-        ask_llm(path, model=model)
-    elif operation == "update":
-        ask_llm(path, update_exif, output_path, model=model)
-    else:
-        print("One or both of the provided paths are not valid directories.")
