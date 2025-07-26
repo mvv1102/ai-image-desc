@@ -22,36 +22,7 @@ async def generate_ollama_response(img_base64, model) -> GenerateResponse:
     )
     return response
 
-def ask_llm(folder, update_exif=False, output_path=None, model="gemma3:latest"):
-    start_time = time.time()
-    count = 0
-    failed = list()
-    if os.path.isfile(folder):
-        file = os.path.basename(folder)
-        file_path = folder
-        success = asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
-        if not success:
-            failed.append(file_path)
-        count += 1
-    else:
-        images = glob.glob(os.path.join(folder, "*.[jJ][pP][gG]")) + \
-            glob.glob(os.path.join(folder, "*.[pP][nN][gG]")) + \
-            glob.glob(os.path.join(folder, "*.[tT][iI][fF]")) + \
-            glob.glob(os.path.join(folder, "*.[bB][mM][pP]"))
-        for file in images:
-            file_path = os.path.join(folder, file)
-            if os.path.isfile(file_path):
-                success = asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
-                if not success:
-                    failed.append(file_path)
-                count += 1
-    end_time = time.time()
-    print(f"Total images processed: {count}")
-    if len(failed) > 0:
-        print(f"Failed to process {len(failed)} images: {failed}")
-    print(f"Total run time: {end_time - start_time:.2f} seconds")
-
-async def ask_llm_file(path, update_exif=False, output_path=None, model="gemma3:latest"):
+async def ask_llm_file(path, update_exif, output_path, model):
     print(f"Processing file {path} using {model}")
 
     with open(path, 'rb') as img_file:
@@ -100,11 +71,38 @@ def update_file(file_path, description_json, output_path):
         return False
     return True
 
+def ask_llm(path: Path, *, update_exif=False, output_path=None, model="gemma3:latest"):
+    start_time = time.time()
+    count = 0
+    failed = []
+    if path.is_file():
+        success = asyncio.run(ask_llm_file(path, update_exif, output_path, model))
+        if not success:
+            failed.append(path)
+        count += 1
+    else:
+        images = []
+        for pattern in ["*.jpg", "*.png", "*.tif", "*.bmp"]:
+            images += path.glob(pattern)
+
+        for image in images:
+            file_path = path / image
+            if file_path.is_file():
+                success = asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
+                if not success:
+                    failed.append(file_path)
+                count += 1
+    end_time = time.time()
+    print(f"Total images processed: {count}")
+    if len(failed) > 0:
+        print(f"Failed to process {len(failed)} images: {failed}")
+    print(f"Total run time: {end_time - start_time:.2f} seconds")
+
 def update_files(args):
-    ask_llm(args.path, True, args.output, model=args.model)
+    ask_llm(args.path, update_exif=True, output_path=args.output, model=args.model)
 
 def ask_files(args):
-    ask_llm(args.path,  model=args.model)
+    ask_llm(args.path, model=args.model)
 
 if __name__ == "__main__":
     parser = ArgumentParser(prog=sys.argv[0], description="AI assisted image description tool")
@@ -115,12 +113,12 @@ if __name__ == "__main__":
     commands = parser.add_subparsers(help="Commands")
 
     update = commands.add_parser("update", help="Updates image files")
-    update.add_argument("path",  help="Where to start the search")
+    update.add_argument("path", type=Path,  help="Where to start the search")
     update.add_argument("--output", "-o", help="Output path")
     update.set_defaults(func=update_files)
 
     ask = commands.add_parser("ask", help="Dry mode. Finds and labels the images but won't update exif metadata")
-    ask.add_argument("path",  help="Where to start the search")
+    ask.add_argument("path", type=Path,  help="Where to start the search")
     ask.set_defaults(func=ask_files)
 
     args = parser.parse_args()
