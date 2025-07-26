@@ -83,7 +83,7 @@ def ask_llm(path: Path, *, update_exif=False, output_path=None, model="gemma3:la
     else:
         images = []
         for pattern in ["*.jpg", "*.png", "*.tif", "*.bmp"]:
-            images += path.glob(pattern)
+            images += path.glob(pattern, case_sensitive=False)
 
         for image in images:
             file_path = path / image
