@@ -1,6 +1,5 @@
 import base64
 import json
-import glob
 import os
 import sys
 import time
@@ -22,7 +21,7 @@ async def generate_ollama_response(img_base64, model) -> GenerateResponse:
     )
     return response
 
-async def ask_llm_file(path, update_exif, output_path, model):
+async def ask_llm_file(path, update_exif, output_path, model, timeout):
     print(f"Processing file {path} using {model}")
 
     with open(path, 'rb') as img_file:
@@ -32,7 +31,7 @@ async def ask_llm_file(path, update_exif, output_path, model):
         img_base64 = base64.b64encode(img_data).decode('utf-8')
 
         try:
-            response = await asyncio.wait_for(generate_ollama_response(img_base64, model), timeout=180)
+            response = await asyncio.wait_for(generate_ollama_response(img_base64, model), timeout=timeout)
         except asyncio.TimeoutError:
             print(f"Timeout while generating response for {path}")
             return False
@@ -50,8 +49,8 @@ def update_file(file_path, description_json, output_path):
     else:
         if not os.path.isabs(output_path):
             output_path = os.path.join(os.path.dirname(file_path), output_path)
-            if not os.path.exists(output_path):
-                os.makedirs(output_path)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
         output_path = os.path.normpath(os.path.join(output_path, os.path.basename(file_path)))
 
     print(f"Updating file: {output_path}")
@@ -71,16 +70,19 @@ def update_file(file_path, description_json, output_path):
         return False
     return True
 
-def ask_llm(path: Path, *, update_exif=False, output_path=None, model="gemma3:latest"):
+def ask_llm(path: Path, *, update_exif=False, output_path=None, model="gemma3:latest", timeout=60):
     start_time = time.time()
     count = 0
     failed = []
     if path.is_file():
-        success = asyncio.run(ask_llm_file(path, update_exif, output_path, model))
+        success = asyncio.run(ask_llm_file(path, update_exif, output_path, model, timeout))
         if not success:
             failed.append(path)
         count += 1
     else:
+        if not path.is_absolute():
+            path = path.resolve()
+            
         images = []
         for pattern in ["*.jpg", "*.png", "*.tif", "*.bmp"]:
             images += path.glob(pattern, case_sensitive=False)
@@ -88,7 +90,7 @@ def ask_llm(path: Path, *, update_exif=False, output_path=None, model="gemma3:la
         for image in images:
             file_path = path / image
             if file_path.is_file():
-                success = asyncio.run(ask_llm_file(file_path, update_exif, output_path, model))
+                success = asyncio.run(ask_llm_file(file_path, update_exif, output_path, model, timeout))
                 if not success:
                     failed.append(file_path)
                 count += 1
@@ -99,31 +101,37 @@ def ask_llm(path: Path, *, update_exif=False, output_path=None, model="gemma3:la
     print(f"Total run time: {end_time - start_time:.2f} seconds")
 
 def update_files(args):
-    ask_llm(args.path, update_exif=True, output_path=args.output, model=args.model)
+    ask_llm(args.path, update_exif=True, output_path=args.output, model=args.model, timeout=args.timeout)
 
 def ask_files(args):
-    ask_llm(args.path, model=args.model)
+    ask_llm(args.path, model=args.model, timeout=args.timeout)
 
 if __name__ == "__main__":
+    default_model = "gemma3:latest"
+    default_timeout = 180
+    
     parser = ArgumentParser(prog=sys.argv[0], description="AI assisted image description tool")
-    # Adding global CLI arguments
-    parser.add_argument("--model", "-m", default="gemma3:latest", help="Model to use")
+
+    # Adding common CLI arguments
+    common_parser = ArgumentParser(add_help=False)
+    common_parser.add_argument("path", type=Path, default=Path("."), help="Where to start the search")
+    common_parser.add_argument("--model", "-m", default=default_model, help=f"Model to use, default is '{default_model}'")
+    common_parser.add_argument("--timeout", "-t", default=default_timeout, type=int, help=f"Timeout for LLM requests in seconds, default is {default_timeout} seconds")
 
     # Subcommands
     commands = parser.add_subparsers(help="Commands")
 
-    update = commands.add_parser("update", help="Updates image files")
-    update.add_argument("path", type=Path,  help="Where to start the search")
-    update.add_argument("--output", "-o", help="Output path")
+    update = commands.add_parser("update", parents=[common_parser], help="Updates exif metadata of the image files with generated descriptions")
+    update.add_argument("--output", "-o", help="Output path; if not specified, will create a new file with '_edited' suffix")
     update.set_defaults(func=update_files)
 
-    ask = commands.add_parser("ask", help="Dry mode. Finds and labels the images but won't update exif metadata")
-    ask.add_argument("path", type=Path,  help="Where to start the search")
+    ask = commands.add_parser("ask", parents=[common_parser], help="Dry mode. Finds and labels the images but won't update exif metadata")
     ask.set_defaults(func=ask_files)
 
     args = parser.parse_args()
+
     if "func" in args:
         args.func(args)
-    else:
+    elif not ("-h" in args or "--help" in args):
         parser.print_help()
         sys.exit(1)
