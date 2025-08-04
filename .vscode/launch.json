@@ -5,12 +5,35 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Current File with Arguments",
+            "name": "Python Debugger: Current File with update Arguments",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": "write D:/Test/kw.jpg -artist: \"Vlad Mikhaylov\""
+            "args": "update D:\\test\\comp -o D:\\test\\comp\\exif"
+        },
+        {
+            "name": "Python Debugger: Current File with ask Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": "ask .\\images"
+        },
+        {
+            "name": "Python Debugger: Current File no Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Python Debugger: Current File with -h",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": "-h"
         }
     ]
 }

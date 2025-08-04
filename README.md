@@ -14,7 +14,7 @@ You must have [Ollama](https://ollama.ai) installed and you must pull the model(
 #### Running
 I packaged the script as a convenient Windows executable file. You can download it and run as follows:
 ```
-ai-image-desc-exif.exe \<operation\> \<path\> -output: [output_path] -model: [model]
+ai-image-desc-exif.exe {ask, update} <path> [-h] [-m] <model name> [-t] <timeout> [-o] <output folder>
 ```
 
 If you want to run Python script directly, pull the repo to your local drive, install script dependencies from the `requirements.txt` file (exif and ollama):
@@ -24,16 +24,21 @@ pip install -r requirements.txt
 
 and then run the following:
 ```
-python ai-image-desc-exif.py \<operation\> \<path\> -output: [output_path] -model: [model]
+python ai-image-desc-exif.py {ask, update} <path> [-h] [-m] <model name> [-t] <timeout> [-o] <output folder>
 ```
 #### Parameters
-**operation**: `ask` or `update`
+**operation**: `ask` - finds and describes the images but won't update exif metadata; `update` - updates exif metadata of the image files with generated descriptions
 
 **path**: path to the image file or folder
 
-**output_path**: path to write updated files to; if not provided, files would be renamed with `_edited` suffix (optional parameter)
+**-h, --help**: help screen
 
-**model**: LLM to use for the description, default is `gemma3:latest` (optional parameter)
+**-m, --model**: LLM to use for the description, default is `gemma3:latest` (optional parameter)
+
+**-t, --timeout**: number of seconds to wait for LLM's response, default is `180` (optional parameter)
+
+**-o, --output**: path to write updated files to; if not provided, files would be renamed with `_edited` suffix (optional parameter)
+
 
 ## Notes
 While the script does not overwrite the original files, it's good idea to have a backup first. I'm not responsible for any data loss.
